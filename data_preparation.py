@@ -43,7 +43,7 @@ def scan_dataset(data_dir):
             for _, row in nec_df.iterrows():
                 img_name = row[img_col]  # 使用列名访问数据
                 is_nec_feature = row[label_col]  # 使用列名访问数据
-                
+
                 # 确保图片名称是字符串，并拼接.tif后缀
                 img_full_name = str(img_name)
                 img_path = os.path.join(nec_dir, img_full_name)
@@ -66,7 +66,7 @@ def scan_dataset(data_dir):
         # 读取Excel文件获取标签信息
         try:
             # 假设normal.xlsx的结构与nec.xlsx类似，第一列为图片名，所有normal图片标签为0
-            normal_df = pd.read_excel(normal_excel, header=None)
+            normal_df = pd.read_excel(normal_excel, header=0)
             print(f"成功读取Normal标签文件: {normal_excel}")
             print(f"Normal数据集包含 {len(normal_df)} 条记录")
             
@@ -88,49 +88,6 @@ def scan_dataset(data_dir):
         print(f"警告: normal-tif目录或normal.xlsx文件不存在")
     
     return image_paths, labels, class_names
-
-def analyze_dataset(image_paths, labels, class_names):
-    """
-    分析数据集，显示基本统计信息
-    """
-    print(f"数据集总图像数量: {len(image_paths)}")
-    print(f"类别数量: {len(class_names)}")
-    
-    # 统计每个类别的样本数量
-    class_counts = {}
-    for i, name in enumerate(class_names):
-        count = labels.count(i)
-        class_counts[name] = count
-        print(f"类别 '{name}': {count} 张图像")
-    
-    # 绘制类别分布图
-    plt.figure(figsize=(10, 6))
-    plt.bar(class_counts.keys(), class_counts.values())
-    plt.title('数据集类别分布')
-    plt.xlabel('类别')
-    plt.ylabel('图像数量')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig('class_distribution.png')
-    
-    # 检查图像尺寸
-    print("\n检查图像尺寸...")
-    sizes = []
-    for path in image_paths[:min(100, len(image_paths))]:
-        try:
-            img = Image.open(path)
-            sizes.append(img.size)
-        except Exception as e:
-            print(f"无法打开图像 {path}: {e}")
-    
-    if sizes:
-        unique_sizes = set(sizes)
-        print(f"检测到 {len(unique_sizes)} 种不同的图像尺寸")
-        for size in unique_sizes:
-            count = sizes.count(size)
-            print(f"尺寸 {size}: {count} 张图像")
-    
-    return class_counts
 
 def split_dataset(image_paths, labels, test_size=0.2, val_size=0.1, random_state=42):
     """
@@ -256,11 +213,17 @@ def main():
     if not image_paths:
         print("错误: 未找到任何图像文件或无法读取Excel标签文件")
         return
-    return
-    # 分析数据集
-    print("\n分析数据集...")
-    analyze_dataset(image_paths, labels, class_names)
-    
+
+    print(f"Length of image_paths: {len(image_paths)}")
+    print(f"Length of labels: {len(labels)}")
+
+    if len(image_paths) != len(labels):
+        print("错误：image_paths 和 labels 长度不一致！请检查 scan_dataset 函数的逻辑。")
+        # 在这里可以进一步打印列表内容，帮助定位问题
+        # for i in range(min(len(image_paths), len(labels))):
+        #     print(f"{image_paths[i]} - {labels[i]}")
+        return 
+
     # 分割数据集
     print("\n分割数据集...")
     train_paths, val_paths, test_paths, train_labels, val_labels, test_labels = split_dataset(
@@ -268,7 +231,7 @@ def main():
     )
     
     # 保存分割信息
-    output_dir = os.path.join(os.path.dirname(data_dir), 'dataset_info')
+    output_dir = os.path.join(os.getcwd(), 'dataset_info')
     save_dataset_splits(
         train_paths, val_paths, test_paths,
         train_labels, val_labels, test_labels,
